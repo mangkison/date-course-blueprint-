@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>AI 청사진 - 커플 데이트 코스 플래닝</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg: #080c14;
+  --bg2: #0d1420;
+  --backend: #1a3a5c;
+  --backend-border: #2d6aa0;
+  --backend-text: #7ec8e3;
+  --agent: #2d1a4a;
+  --agent-border: #7c3aed;
+  --agent-text: #c4b5fd;
+  --qdrant: #2a1f0a;
+  --qdrant-border: #d97706;
+  --qdrant-text: #fcd34d;
+  --llm: #1a0f0f;
+  --llm-border: #dc2626;
+  --llm-text: #fca5a5;
+  --frontend: #0f2a1a;
+  --frontend-border: #16a34a;
+  --frontend-text: #86efac;
+  --muted: #4b5563;
+  --line: #1e2d40;
+  --white: #f1f5f9;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  padding: 48px 32px;
+  min-height: 100vh;
+}
+
+/* HEADER */
+.header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.header .tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--agent-text);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+.header p {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* SECTION LABEL */
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+  padding-left: 4px;
+  border-left: 2px solid var(--muted);
+  padding-left: 10px;
+}
+
+/* CARD */
+.card {
+  border-radius: 10px;
+  padding: 20px 22px;
+  font-size: 14px;
+  line-height: 1.8;
+  border: 1px solid;
+  position: relative;
+}
+.card.backend  { background: var(--backend);  border-color: var(--backend-border);  color: var(--backend-text); }
+.card.agent    { background: var(--agent);    border-color: var(--agent-border);    color: var(--agent-text); }
+.card.qdrant   { background: var(--qdrant);   border-color: var(--qdrant-border);   color: var(--qdrant-text); }
+.card.llm      { background: var(--llm);      border-color: var(--llm-border);      color: var(--llm-text); }
+.card.frontend { background: var(--frontend); border-color: var(--frontend-border); color: var(--frontend-text); }
+.card.neutral  { background: #111827; border-color: #1f2937; color: #9ca3af; }
+
+.card-title {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-title .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.backend .dot  { background: var(--backend-border); }
+.agent .dot    { background: var(--agent-border); }
+.qdrant .dot   { background: var(--qdrant-border); }
+.llm .dot      { background: var(--llm-border); }
+.frontend .dot { background: var(--frontend-border); }
+
+.code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  line-height: 1.9;
+  white-space: pre;
+}
+
+/* ARROW */
+.arrow-down {
+  text-align: center;
+  color: var(--muted);
+  font-size: 16px;
+  margin: 8px 0;
+}
+.arrow-right {
+  color: var(--muted);
+  font-size: 14px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+}
+.arrow-label {
+  font-size: 9px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* LAYOUT */
+.wrap { max-width: 960px; margin: 0 auto; }
+
+.page {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 32px;
+  margin-bottom: 32px;
+  position: relative;
+  page-break-after: always;
+  break-after: page;
+}
+.page-num {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.col { flex: 1; }
+
+.insight {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.03);
+  border-left: 2px solid var(--agent-border);
+  font-size: 13px;
+  color: var(--muted);
+  border-radius: 0 6px 6px 0;
+}
+.insight span { color: var(--agent-text); font-weight: 600; }
+
+/* BADGE */
+.badge {
+  display: inline-block;
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+.badge.pre  { background: #1f2937; color: #6b7280; border: 1px dashed #374151; }
+.badge.live { background: #1a1a3a; color: #818cf8; border: 1px dashed #4f46e5; }
+
+/* CHECK LIST */
+.checklist { list-style: none; margin-top: 6px; }
+.checklist li { 
+  font-size: 14px; 
+  padding: 4px 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.checklist li .ok  { color: #34d399; }
+.checklist li .fail { color: #f87171; }
+
+/* OUTPUT CARDS */
+.output-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.output-card {
+  background: #0f1f18;
+  border: 1px solid #166534;
+  border-radius: 8px;
+  padding: 14px;
+}
+.output-card .course-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #34d399;
+  margin-bottom: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+}
+.output-card .stop {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #86efac;
+}
+.output-card .stop .time {
+  font-family: 'JetBrains Mono', monospace;
+  color: #4ade80;
+  font-size: 12px;
+  min-width: 42px;
+}
+.output-card .stop .place { font-weight: 500; }
+.output-card .stop .price { color: #6b7280; font-size: 12px; margin-top: 1px; }
+.output-card .total {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #166534;
+  font-size: 12px;
+  color: #6b7280;
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* LEGEND */
+.legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 2px;
+}
+
+/* DIVIDER */
+.divider {
+  border: none;
+  border-top: 1px dashed #1e2d40;
+  margin: 20px 0;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="tag">AI Architecture Blueprint</div>
+    <h1>커플 데이트 코스 플래닝 서비스</h1>
+    <p>Deep Agent + RAG + Qdrant 기반 AI 파이프라인</p>
+  </div>
+
+  <!-- PAGE 0: 전체 흐름 도식도 -->
+  <div class="page">
+    <div class="page-num">PAGE 00 / 05</div>
+    <div class="section-label">전체 아키텍처 흐름</div>
+
+    <div style="display:flex; flex-direction:column; align-items:center; gap:0; padding: 8px 0;">
+
+      <!-- 입력 -->
+      <div style="display:flex; align-items:center; gap:12px; width:100%; justify-content:center;">
+        <div class="card frontend" style="width:220px; text-align:center;">
+          <div class="card-title" style="justify-content:center;"><span class="dot"></span>입력 (Frontend)</div>
+          <div style="font-size:13px; margin-top:4px;">"3시에 홍대, 예산 10만원"</div>
+        </div>
+      </div>
+
+      <div class="arrow-down">↓</div>
+
+      <!-- Agent 임베딩 -->
+      <div style="display:flex; align-items:center; gap:12px; width:100%; justify-content:center;">
+        <div class="card agent" style="width:220px; text-align:center;">
+          <div class="card-title" style="justify-content:center;"><span class="dot"></span>임베딩 (Deep Agent)</div>
+          <div style="font-size:13px; margin-top:4px;">자연어 → 벡터 변환<br>Tool 트리거 판단</div>
+        </div>
+      </div>
+
+      <div class="arrow-down">↓</div>
+
+      <!-- RAG 검색 -->
+      <div style="display:flex; align-items:center; gap:12px; width:100%; justify-content:center;">
+        <div class="card qdrant" style="width:340px;">
+          <div class="card-title" style="justify-content:center;"><span class="dot"></span>RAG — 검색</div>
+          <div style="display:flex; gap:12px; margin-top:8px;">
+            <div style="flex:1; background:rgba(0,0,0,0.2); border-radius:6px; padding:8px; font-size:13px; text-align:center;">
+              <div style="font-weight:700; margin-bottom:4px;">사용자 정보 (SQL)</div>
+              <div style="opacity:0.8;">커플 취향<br>연애 단계<br>예산 범위</div>
+            </div>
+            <div style="display:flex; align-items:center; color:var(--muted); font-size:14px;">+</div>
+            <div style="flex:1; background:rgba(0,0,0,0.2); border-radius:6px; padding:8px; font-size:13px; text-align:center;">
+              <div style="font-weight:700; margin-bottom:4px;">장소 데이터 (벡터 DB)</div>
+              <div style="opacity:0.8;">유사도 검색<br>후보 장소 반환<br>FAISS</div>
+            </div>
+          </div>
+          <div style="font-size:13px; text-align:center; margin-top:8px; opacity:0.7;">두 데이터 → 프롬프트 Context에 합쳐서 삽입</div>
+        </div>
+      </div>
+
+      <div class="arrow-down">↓</div>
+
+      <!-- LLM 생성 -->
+      <div style="display:flex; align-items:center; gap:12px; width:100%; justify-content:center;">
+        <div class="card llm" style="width:220px; text-align:center;">
+          <div class="card-title" style="justify-content:center;"><span class="dot"></span>생성 (LLM)</div>
+          <div style="font-size:13px; margin-top:4px;">코스 초안 생성<br>GPT-4o / Claude</div>
+        </div>
+      </div>
+
+      <div class="arrow-down">↓</div>
+
+      <!-- Double Check -->
+      <div style="display:flex; align-items:center; gap:12px; width:100%; justify-content:center;">
+        <div class="card agent" style="width:340px;">
+          <div class="card-title" style="justify-content:center;"><span class="dot"></span>강화 — Double Check (Agent)</div>
+          <div style="display:flex; gap:16px; margin-top:8px; font-size:13px; justify-content:center;">
+            <div>✓ 영업 중?</div>
+            <div>✓ 예산 이내?</div>
+            <div>✓ 동선 효율?</div>
+          </div>
+          <div style="font-size:13px; text-align:center; margin-top:8px; opacity:0.7;">조건 불만족 → 벡터 DB 재검색 (루프)</div>
+        </div>
+      </div>
+
+      <div class="arrow-down">↓</div>
+
+      <!-- 출력 -->
+      <div style="display:flex; align-items:center; gap:12px; width:100%; justify-content:center;">
+        <div class="card frontend" style="width:340px;">
+          <div class="card-title" style="justify-content:center;"><span class="dot"></span>출력 → Frontend 전달</div>
+          <div style="display:flex; gap:12px; margin-top:8px;">
+            <div style="flex:1; background:rgba(0,0,0,0.2); border-radius:6px; padding:8px; font-size:13px; text-align:center;">
+              <div style="font-weight:700; color:#34d399; margin-bottom:4px;">COURSE A</div>
+              <div style="opacity:0.8;">감성 코스<br>15:00 → 20:00</div>
+            </div>
+            <div style="flex:1; background:rgba(0,0,0,0.2); border-radius:6px; padding:8px; font-size:13px; text-align:center;">
+              <div style="font-weight:700; color:#34d399; margin-bottom:4px;">COURSE B</div>
+              <div style="opacity:0.8;">활기찬 코스<br>15:00 → 20:00</div>
+            </div>
+          </div>
+          <div style="font-size:13px; text-align:center; margin-top:8px; opacity:0.7;">FastAPI → 프론트로 전달</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PAGE 1: Deep Agent + 임베딩 -->
+  <div class="page">
+    <div class="page-num">PAGE 01 / 05</div>
+    <div class="section-label">Deep Agent + 임베딩</div>
+
+    <div class="badge live">REALTIME</div>
+
+    <div class="card frontend">
+      <div class="card-title"><span class="dot"></span>사용자 자연어 입력 (Frontend)</div>
+      <div class="code">"3시에 홍대, 예산 10만원, 카페→식사→술, 분위기 좋은 곳으로 저녁 8시까지"</div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <div class="card agent">
+      <div class="card-title"><span class="dot"></span>Deep Agent (deepagents 라이브러리)</div>
+      <div class="row" style="margin-top:8px; gap:16px;">
+        <div class="col">
+          <div style="font-weight:600; margin-bottom:6px; font-size:13px;">① 사용자 입력 분석 (LLM)</div>
+          <div class="code">시간:  15:00 ~ 20:00
+지역:  홍대
+예산:  100,000원
+순서:  카페 → 식사 → 술
+분위기: 감성적</div>
+        </div>
+        <div class="col">
+          <div style="font-weight:600; margin-bottom:6px; font-size:13px;">② 임베딩 변환 (deepagents 자동)</div>
+          <div class="code">모델: ko-sroberta-multitask
+      (한국어 특화)
+
+"분위기 좋은 카페 홍대"
+→ [0.2, 0.8, 0.1, 0.9 ...]</div>
+        </div>
+        <div class="col">
+          <div style="font-weight:600; margin-bottom:6px; font-size:13px;">③ Tool 트리거 판단</div>
+          <div class="code">날씨 API
+→ 오늘 날씨 확인
+
+동선 API (카카오맵)
+→ 이동 시간 계산
+
+개인화 필터
+→ 커플 취향 교집합</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <span>핵심:</span> 자연어를 그대로 수신 → LLM이 의도 파악 → 임베딩 변환까지 deepagents가 자동 처리. 백엔드 파싱 불필요.
+    </div>
+  </div>
+
+  <!-- PAGE 2: 벡터DB -->
+  <div class="page">
+    <div class="page-num">PAGE 02 / 05</div>
+    <div class="section-label">벡터 DB (Qdrant)</div>
+
+    <div class="badge pre">PRE-PROCESS — 주기적 업데이트</div>
+
+    <div class="row" style="align-items:stretch;">
+      <div class="col">
+        <div class="card qdrant">
+          <div class="card-title"><span class="dot"></span>벡터 DB 저장 구조 (FAISS / Qdrant)</div>
+          <div class="code">Point = 벡터 + 페이로드
+
+vector:  [0.2, 0.8, 0.1, ...]
+payload:
+  name:     "카페 온도"
+  category: "카페"
+  location: "홍대"
+  price:    10000
+  hours:    "10:00~22:00"
+  is_open:  true
+  review:   "감성적인 조용한 카페"</div>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; color:var(--muted); font-size:20px; padding: 0 8px;">+</div>
+
+      <div class="col">
+        <div class="card backend">
+          <div class="card-title"><span class="dot"></span>SQL 사용자 정보 (정형 데이터)</div>
+          <div class="code">users 테이블
+──────────────────────────
+user_id:       42
+name:          "망키손"
+age:           24
+
+couple_prefs 테이블
+──────────────────────────
+user_id:       42
+partner_id:    43
+mood:          "감성적"
+food_type:     "한식, 이탈리안"
+avoid:         "시끄러운 곳"
+budget:        100000
+age_group:     "20대초반"</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <span>핵심:</span> 벡터 DB (장소 후보) + SQL (커플 취향) → 두 데이터를 합쳐서 프롬프트 Context로 LLM에 전달.
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="badge live">REALTIME — 사용자 요청 시</div>
+
+    <div class="card qdrant">
+      <div class="card-title"><span class="dot"></span>유사도 검색</div>
+      <div class="row" style="margin-top:8px; gap:16px;">
+        <div class="col">
+          <div style="font-size:13px; font-weight:600; margin-bottom:6px;">코사인 유사도 계산</div>
+          <div class="code">입력 벡터
+[0.2, 0.7, 0.1, 0.8 ...]
+         ↓
+저장된 모든 벡터와 비교
+         ↓
+유사도 높은 순 정렬</div>
+        </div>
+        <div class="col">
+          <div style="font-size:13px; font-weight:600; margin-bottom:6px;">후보 장소 반환</div>
+          <div class="code">1위: 카페 온도   (0.94)
+2위: 카페 을지로 (0.91)
+3위: 감성 커피숍 (0.88)
+...
+→ 상위 N개 페이로드 반환</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <span>핵심:</span> 카테고리 없이 의미 기반 자동 군집. 유사도가 높을수록 문맥적으로 가까운 장소. 벡터 = 검색용, 페이로드 = LLM에 전달할 실제 데이터.
+    </div>
+  </div>
+
+  <!-- PAGE 3: RAG → LLM → 출력 -->
+  <div class="page">
+    <div class="page-num">PAGE 03 / 05</div>
+    <div class="section-label">RAG → LLM → 코스 출력</div>
+
+    <div class="badge live">REALTIME</div>
+
+    <div class="card agent">
+      <div class="card-title"><span class="dot"></span>RAG — 프롬프트 조합</div>
+      <div class="code" style="font-size:13px;">[ System Prompt ]
+너는 커플 데이트 코스 추천 AI야. 다음 조건을 반드시 지켜:
+- 영업 중인 장소만 추천
+- 예산 초과 금지
+- 이동 시간 30분 초과 시 재검색
+- 코스 2개 추천 (각각 다른 분위기로)
+
+[ Context — Qdrant 검색 결과 ]
+- 카페 온도:  홍대, 10,000원, 영업 중 ✓
+- 식당 B:    홍대, 30,000원, 영업 중 ✓
+- 바 C:      홍대, 20,000원, 영업 중 ✓
+- 카페 D:    합정,  8,000원, 영업 중 ✓
+
+[ User Input ]
+"3시에 홍대, 예산 10만원, 카페→식사→술"</div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <div class="card llm" style="padding: 12px 18px;">
+      <div class="card-title" style="margin-bottom:0;"><span class="dot"></span>LLM 코스 생성 (GPT-4o / Claude — 테스트 후 확정)</div>
+    </div>
+
+    <div class="card agent" style="margin-top:12px;">
+      <div class="card-title"><span class="dot"></span>Double Check 루프</div>
+      <ul class="checklist">
+        <li><span class="ok">✓</span> 모든 장소 영업 중?</li>
+        <li><span class="ok">✓</span> 총 예산 10만원 이내?</li>
+        <li><span class="ok">✓</span> 장소 간 이동 시간 30분 이내?</li>
+        <li><span class="fail">✗</span> 조건 불만족 시 → Qdrant 재검색 (루프)</li>
+      </ul>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <div style="font-size:13px; color:var(--frontend-text); font-weight:600; margin-bottom:8px;">최종 코스 출력 — 2개 추천</div>
+    <div class="output-wrap">
+      <div class="output-card">
+        <div class="course-title">COURSE A — 감성 코스</div>
+        <div class="stop">
+          <div>
+            <div class="time">15:00</div>
+          </div>
+          <div>
+            <div class="place">카페 온도 (홍대)</div>
+            <div class="price">9,000원 · 도보 0분</div>
+          </div>
+        </div>
+        <div class="stop">
+          <div>
+            <div class="time">17:30</div>
+          </div>
+          <div>
+            <div class="place">식당 B (홍대)</div>
+            <div class="price">28,000원 · 도보 5분</div>
+          </div>
+        </div>
+        <div class="stop">
+          <div>
+            <div class="time">20:00</div>
+          </div>
+          <div>
+            <div class="place">바 C (홍대)</div>
+            <div class="price">18,000원 · 도보 7분</div>
+          </div>
+        </div>
+        <div class="total">
+          <span>총 이동 15분</span>
+          <span>총 55,000원</span>
+        </div>
+      </div>
+      <div class="output-card">
+        <div class="course-title">COURSE B — 활기찬 코스</div>
+        <div class="stop">
+          <div>
+            <div class="time">15:00</div>
+          </div>
+          <div>
+            <div class="place">카페 D (합정)</div>
+            <div class="price">8,000원 · 도보 0분</div>
+          </div>
+        </div>
+        <div class="stop">
+          <div>
+            <div class="time">17:00</div>
+          </div>
+          <div>
+            <div class="place">식당 E (홍대)</div>
+            <div class="price">35,000원 · 도보 12분</div>
+          </div>
+        </div>
+        <div class="stop">
+          <div>
+            <div class="time">20:00</div>
+          </div>
+          <div>
+            <div class="place">바 F (홍대)</div>
+            <div class="price">20,000원 · 도보 8분</div>
+          </div>
+        </div>
+        <div class="total">
+          <span>총 이동 20분</span>
+          <span>총 63,000원</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <span>핵심:</span> Qdrant 검색 결과가 RAG Context로 LLM에 전달 → 조건 불만족 시 자동 재검색 루프 → 최종 코스 2개 출력 (각각 다른 분위기).
+    </div>
+  </div>
+
+  <!-- PAGE 4: 팀 요구사항 -->
+  <div class="page">
+    <div class="page-num">PAGE 04 / 05</div>
+    <div class="section-label">팀 요구사항 — AI 파트가 필요한 것들</div>
+
+    <div class="row" style="gap:12px; align-items:stretch;">
+
+      <!-- 백엔드 통합 -->
+      <div class="col">
+        <div class="card backend">
+          <div class="card-title"><span class="dot"></span>Backend — 팀에게 요청할 것</div>
+          <div style="margin-top:10px;">
+            <div style="font-size:13px; font-weight:700; margin-bottom:6px; color:var(--backend-text);">① 사용자 정보 (SQL)</div>
+            <div class="code">취향 데이터 SQL에 저장
++
+Agent가 조회할 수 있게
+조회 API 만들어줘</div>
+            <div style="font-size:13px; font-weight:700; margin:12px 0 6px; color:var(--backend-text);">② 벡터 DB 선택</div>
+            <div class="code">현재: FAISS (로컬)
+추후: Qdrant (Docker)
+→ 어떤 걸 쓸지 확정 필요</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 기획 -->
+      <div class="col">
+        <div class="card llm">
+          <div class="card-title"><span class="dot"></span>기획 — 요청사항</div>
+          <div style="margin-top:10px;">
+            <div style="font-size:13px; font-weight:700; margin-bottom:6px; color:var(--llm-text);">① 온보딩 체크 항목 만들어주세요</div>
+            <div class="code">분위기, 음식 종류, 예산,
+연애 단계 등 선택지 확정
+→ SQL 저장 구조랑 맞춰야 함</div>
+            <div style="font-size:13px; font-weight:700; margin:12px 0 6px; color:var(--llm-text);">② 조건 우선순위 정해주세요</div>
+            <div class="code">예산 vs 동선 효율
+영업시간 vs 취향 적합도
+→ 뭘 더 엄격하게 볼지?</div>
+            <div style="font-size:13px; font-weight:700; margin:12px 0 6px; color:var(--llm-text);">③ 나이별 차이 어떻게 할까요?</div>
+            <div class="code">20대 초반 / 20대 후반 / 30대 등
+나이대마다 추천 방식
+달라지는지?</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <div style="font-size:13px; font-weight:700; color:#4b5563; margin-bottom:12px; letter-spacing:1px;">📦 확장 사항 (중간발표 이후)</div>
+    <div class="card neutral">
+      <div class="row" style="gap:16px;">
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">NLP 광고 필터</div>
+          <div class="code" style="font-size:13px;">크롤링 리뷰에서
+광고성 리뷰 자동 감지 후 제거</div>
+        </div>
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">벡터 DB 고도화</div>
+          <div class="code" style="font-size:13px;">FAISS →
+Qdrant (Docker) 마이그레이션</div>
+        </div>
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">예약 API 연동</div>
+          <div class="code" style="font-size:13px;">캐치테이블 API 문의 후 결정
+→ 코스 내 예약 자동화</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 5: 미결 질문 -->
+  <div class="page" style="page-break-after: avoid; break-after: avoid;">
+    <div class="page-num">PAGE 05 / 05</div>
+    <div class="section-label">미결 질문 — 팀과 확정 필요</div>
+
+    <!-- Q1: 벡터 DB -->
+    <div class="card qdrant" style="margin-bottom:16px;">
+      <div class="card-title"><span class="dot"></span>Q1. 벡터 DB 뭐 쓸까?</div>
+      <div class="row" style="margin-top:12px; gap:12px;">
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">FAISS (로컬)</div>
+          <div class="code">✓ 설치 간단, 빠름
+✓ 외부 서버 불필요
+✗ 필터링 기능 약함
+✗ 실시간 업데이트 불편
+→ 프로토타입·중간발표용</div>
+        </div>
+        <div class="arrow-right">vs</div>
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">Qdrant (Docker)</div>
+          <div class="code">✓ 페이로드 필터 강력
+✓ REST API 지원
+✓ 실시간 업데이트 가능
+✗ Docker 세팅 필요
+→ 최종 배포용</div>
+        </div>
+      </div>
+      <div class="insight">
+        <span>현재 생각:</span> 중간발표까진 FAISS로 빠르게 → 이후 Qdrant 마이그레이션. 팀 합의 필요.
+      </div>
+    </div>
+
+    <!-- Q2: SQL -->
+    <div class="card backend" style="margin-bottom:16px;">
+      <div class="card-title"><span class="dot"></span>Q2. SQL은 뭐 써야 하지?</div>
+      <div class="row" style="margin-top:12px; gap:12px;">
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">SQLite</div>
+          <div class="code">✓ 설치 불필요, 파일 기반
+✓ 로컬 개발 초간단
+✗ 동시 접속 약함
+→ 개인 테스트용</div>
+        </div>
+        <div class="arrow-right">vs</div>
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">PostgreSQL</div>
+          <div class="code">✓ 실제 서비스 표준
+✓ 동시 접속 강함
+✓ 백엔드 팀 익숙할 가능성↑
+✗ 서버 세팅 필요
+→ 팀 프로젝트·배포용</div>
+        </div>
+        <div class="arrow-right">vs</div>
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">MySQL</div>
+          <div class="code">✓ 국내 많이 사용
+✓ 백엔드 팀 친숙
+✗ PostgreSQL보다
+  기능 제한적
+→ 팀이 익숙하면 OK</div>
+        </div>
+      </div>
+      <div class="insight">
+        <span>현재 생각:</span> 백엔드 팀이 익숙한 걸로 결정하되, PostgreSQL 권장. AI 입장에선 조회 API만 호출하면 뭐든 상관 없음.
+      </div>
+    </div>
+
+    <!-- Q3: AI 아웃풋 연결 방식 -->
+    <div class="card agent" style="margin-bottom:16px;">
+      <div class="card-title"><span class="dot"></span>Q3. AI 아웃풋 → 프론트 연결 방식</div>
+      <div class="row" style="margin-top:12px; gap:12px;">
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px; color:#34d399;">Option A — AI가 직접 API 노출</div>
+          <div class="code">Frontend
+    ↓ POST /recommend
+  FastAPI (AI)
+    ↓ JSON 응답
+Frontend</div>
+          <div style="margin-top:10px; font-size:13px;">
+            <div style="color:#34d399; margin-bottom:4px;">장점</div>
+            <div class="code">✓ 구조 단순
+✓ 백엔드 팀 의존 없음
+✓ AI 파트 독립 개발 가능
+✓ 속도 빠름</div>
+            <div style="color:#f87171; margin-top:8px; margin-bottom:4px;">단점</div>
+            <div class="code">✗ 인증·보안 직접 처리
+✗ 백엔드 기능 필요 시
+  연결 복잡해질 수 있음</div>
+          </div>
+        </div>
+        <div class="arrow-right">vs</div>
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px; color:#7ec8e3;">Option B — 백엔드 경유</div>
+          <div class="code">Frontend
+    ↓ POST /recommend
+  Backend (Spring/Django)
+    ↓ 내부 호출
+  FastAPI (AI)
+    ↓ JSON 응답
+  Backend
+    ↓
+Frontend</div>
+          <div style="margin-top:10px; font-size:13px;">
+            <div style="color:#34d399; margin-bottom:4px;">장점</div>
+            <div class="code">✓ 인증·로깅 백엔드가 담당
+✓ 팀 역할 분리 명확
+✓ 확장 시 유연</div>
+            <div style="color:#f87171; margin-top:8px; margin-bottom:4px;">단점</div>
+            <div class="code">✗ 레이어 하나 더
+✗ 백엔드 팀과 연동 필요
+✗ 응답 속도 약간 느림</div>
+          </div>
+        </div>
+      </div>
+      <div class="insight">
+        <span>현재 생각:</span> 중간발표까진 Option A (직접 연결)로 빠르게. 최종 배포 때 Option B 고려.
+      </div>
+    </div>
+
+    <!-- Q4: 취향 입력 방식 -->
+    <div class="card backend">
+      <div class="card-title"><span class="dot"></span>Q4. 사용자 취향 — 어떻게 받을까?</div>
+      <div class="row" style="margin-top:12px; gap:12px;">
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">Option A — 온보딩 선택 (권장)</div>
+          <div class="code">회원가입 시 취향 선택
+──────────────────
+분위기:  [ ] 감성  [ ] 활기찬
+음식:    [ ] 한식  [ ] 양식
+예산:    [ ] ~5만  [ ] ~10만
+연애단계: [ ] 초반  [ ] 1년+
+         ↓
+Backend가 SQL에 저장
+Agent는 읽기만 함</div>
+          <div style="margin-top:8px; font-size:13px; color:#34d399;">✓ 구현 단순, 데이터 명확</div>
+        </div>
+        <div class="arrow-right">vs</div>
+        <div class="col">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">Option B — AI 분석</div>
+          <div class="code">대화형으로 취향 파악
+──────────────────
+"어떤 분위기 좋아해요?"
+→ 자유 입력
+→ Agent가 분석 후
+  SQL에 자동 저장
+         ↓
+복잡도 높음</div>
+          <div style="margin-top:8px; font-size:13px; color:#f87171;">✗ 구현 복잡, 오차 가능성</div>
+        </div>
+      </div>
+      <div class="insight">
+        <span>현재 생각:</span> Option A로 확정. 저장은 백엔드, Agent는 조회만. 프론트한테 온보딩 화면 요청 필요.
+      </div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend" style="margin-top: 20px;">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--backend-border);"></div>Backend</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--frontend-border);"></div>Frontend</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--agent-border);"></div>Deep Agent</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--qdrant-border);"></div>Qdrant</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--llm-border);"></div>LLM</div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>
